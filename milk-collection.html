@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Milk Collection System</title>
+<style>
+:root{--ink:#14213d;--mut:#667085;--line:#dde3ee;--bg:#f2f5fa;--card:#fff;--blue:#1b6ef3;--buf:#14213d;--cow:#b45309;--ok:#0a7d3b}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.4 "Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+h1{margin:0;padding:16px 12px 4px;text-align:center;color:var(--blue);font-size:1.5rem}
+.wrap{max-width:760px;margin:0 auto;padding:10px 12px 40px}
+.tabs{display:flex;gap:6px;margin:8px 0 12px}
+.tabs button{flex:1;padding:12px 6px;border:1px solid var(--line);background:#fff;border-radius:10px;font-weight:600;color:var(--mut);font-size:1rem}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 6px rgba(20,33,61,.08)}
+.card h2{margin:0 0 10px;font-size:1.1rem}
+.buf h2{color:var(--buf)}.cow h2{color:var(--cow)}
+label{display:block;font-size:.8rem;color:var(--mut);margin-bottom:3px}
+input,select,textarea{width:100%;padding:11px 10px;border:1px solid #c9d1e0;border-radius:9px;font-size:1rem;background:#fff;color:var(--ink)}
+input:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.row{display:flex;gap:8px;margin-bottom:10px}.row>div{flex:1;min-width:0}
+.res{display:flex;justify-content:space-between;gap:8px;margin-top:4px;font-weight:700}
+.res .r{color:var(--blue)}.res .a{color:var(--ok)}
+.warn{color:#b42318;font-size:.85rem;min-height:1.1em;margin-top:4px}
+.tot{display:flex;justify-content:space-between;font-size:1.2rem;font-weight:700;padding:4px 2px 12px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{flex:1;min-width:120px;padding:12px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:600;font-size:1rem;cursor:pointer}
+.btn.g{background:#e8edf6;color:var(--ink)}.btn.ok{background:var(--ok)}.btn.d{background:#fde8e8;color:#b42318}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chips button{padding:8px 12px;border:1px solid var(--line);background:#fff;border-radius:20px;color:var(--ink);cursor:pointer}
+.tbl{width:100%;border-collapse:collapse;font-size:.85rem}
+.tbl th,.tbl td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+.tbl th:first-child,.tbl td:first-child,.tbl th:nth-child(2),.tbl td:nth-child(2){text-align:left}
+.scroll{overflow-x:auto}
+.rw{display:flex;gap:6px;margin-bottom:6px}.rw input{flex:1}.rw button{width:42px;border:0;border-radius:9px;background:#fde8e8;color:#b42318;font-size:1rem}
+.hd{display:flex;gap:6px;font-size:.8rem;color:var(--mut);margin-bottom:4px}.hd span{flex:1}.hd i{width:42px}
+.note{font-size:.85rem;color:var(--mut);margin:0 0 10px}
+.dh{display:flex;justify-content:space-between;margin-bottom:8px}.dh span{color:var(--ok);font-weight:700}
+.day{padding:10px}.wl{display:grid;grid-template-columns:54px repeat(3,1fr) 66px;gap:5px;align-items:center;margin-bottom:6px}
+.wl input{padding:9px 5px;font-size:.95rem;min-width:0}.wl .tn{font-size:.8rem;font-weight:600}.wl b{font-size:.85rem;text-align:right;color:var(--ok)}
+.wl.buffalo .tn{color:var(--buf)}.wl.cow .tn{color:var(--cow)}
+.hide{display:none}
+textarea{font-family:inherit;resize:vertical;margin-bottom:8px}details{margin-top:10px;font-size:.85rem}details li{margin-bottom:4px}pre{background:#f2f5fa;padding:8px;border-radius:8px;overflow:auto;font-size:.75rem}
+#ov{position:fixed;inset:0;background:rgba(20,33,61,.6);overflow:auto;padding:12px;z-index:9}
+#ov .bar{max-width:760px;margin:0 auto 10px;display:flex;gap:8px;flex-wrap:wrap}
+#ov .bar input{flex:2;min-width:180px}
+#ov .bar .btn{min-width:90px}
+#sheet{max-width:760px;margin:0 auto;background:#fff;padding:22px;border-radius:8px;color:#000}
+@media print{
+ body>*:not(#ov){display:none!important}
+ #ov{position:static;background:none;padding:0;overflow:visible}
+ #ov .bar{display:none}
+ #sheet{max-width:none;padding:0;border-radius:0}
+}
+</style>
+</head>
+<body>
+<h1>Milk Collection System</h1>
+<p id="c_stat" class="note" onclick="cloudNow()" style="text-align:center;margin:0 0 4px;cursor:pointer">Connecting…</p>
+<div class="wrap">
+ <div class="tabs">
+  <button id="t_daily" class="on" onclick="tab('daily')">Daily</button>
+  <button id="t_weekly" onclick="tab('weekly')">Weekly</button>
+  <button id="t_rates" onclick="tab('rates')">Settings</button>
+ </div>
+
+ <!-- DAILY -->
+ <section id="daily">
+  <div class="card"><div class="row">
+   <div style="flex:2"><label>Name</label><input id="d_name" list="names" placeholder="Farmer name" oninput="loadDay()"></div>
+   <div><label>Date</label><input id="d_date" type="date" onchange="loadDay()"></div>
+  </div></div>
+  <div id="d_cards"></div>
+  <div class="tot"><span>Total amount</span><span id="d_total" style="color:var(--ok)">₹0.00</span></div>
+  <div class="btns">
+   <button class="btn g" onclick="saveDay()">Save entry</button>
+   <button class="btn" onclick="dayBill()">Make bill</button>
+   <button class="btn d" onclick="clearDay()">Clear</button>
+  </div>
+  <p class="warn" id="d_msg"></p>
+ </section>
+
+ <!-- WEEKLY -->
+ <section id="weekly" class="hide">
+  <div class="card">
+   <label>Name</label><input id="w_name" list="names" placeholder="Farmer name" oninput="weekShow()" style="margin-bottom:10px">
+   <div class="chips">
+    <button onclick="quick('week')">This week</button>
+    <button onclick="quick(7)">Last 7 days</button>
+    <button onclick="quick(15)">Last 15 days</button>
+    <button onclick="quick('month')">This month</button>
+   </div>
+   <div class="row" style="margin:0">
+    <div><label>From</label><input id="w_from" type="date" onchange="weekShow()"></div>
+    <div><label>To</label><input id="w_to" type="date" onchange="weekShow()"></div>
+   </div>
+  </div>
+  <div id="w_out"></div>
+  <div class="card" id="w_tot"></div>
+  <div class="btns"><button class="btn" onclick="weekBill()">Make bill</button></div>
+  <p class="warn" id="w_msg"></p>
+ </section>
+
+ <!-- RATES -->
+ <section id="rates" class="hide">
+    <div class="card">
+   <h2>Bill settings</h2>
+   <div class="row"><div><label>Bill heading</label><input id="s_title" onchange="S.title=this.value;touch()"></div>
+   <div><label>Signature label</label><input id="s_sign" onchange="S.sign=this.value;touch()"></div></div>
+  </div>
+  <div class="tabs"><button id="r_buffalo" class="on" onclick="rtype('buffalo')">Buffalo</button><button id="r_cow" onclick="rtype('cow')">Cow</button></div>
+  <div class="card">
+   <h2>Fat rate table</h2>
+   <p class="note">Each row is one Fat value and its base rate. Add or remove rows to change the range.</p>
+   <div class="hd"><span>Fat</span><span>Rate ₹</span><i></i></div>
+   <div id="fatRows"></div>
+   <button class="btn g" onclick="addFat()" style="width:100%">+ Add fat row</button>
+  </div>
+  <div class="card">
+   <h2>SNF table</h2>
+   <p class="note">Adjustment is added to (or cut from, if negative) the fat rate. Now it is 0 at the ideal SNF. If an SNF is not listed, the nearest row is used.</p>
+   <div class="hd"><span>SNF</span><span>Adjust ₹</span><i></i></div>
+   <div id="snfRows"></div>
+   <button class="btn g" onclick="addSnf()" style="width:100%">+ Add SNF row</button>
+  </div>
+  <button class="btn d" onclick="resetAll()" style="width:100%">Reset rate tables to start values</button>
+ </section>
+</div>
+<datalist id="names"></datalist>
+
+<div id="ov" class="hide">
+ <div class="bar">
+  <input id="b_title" placeholder="Bill heading" oninput="S.title=this.value;touch();drawBill()">
+  <button class="btn" onclick="window.print()">Print / PDF</button>
+  <button class="btn ok" onclick="dlBill()">Download</button>
+  <button class="btn g" onclick="$('#ov').classList.add('hide')">Close</button>
+ </div>
+ <div id="sheet"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), KEY='milkApp.v1', TYPES=['buffalo','cow'];
+const BILLCSS='.bh{text-align:center;margin:0 0 4px;font-size:24px}.bm{display:flex;justify-content:space-between;margin:12px 0;font-size:15px;gap:8px;flex-wrap:wrap}table.b{width:100%;border-collapse:collapse;font-size:14px}table.b th,table.b td{border:1px solid #444;padding:6px;text-align:right}table.b th{background:#eee}table.b td:first-child,table.b td:nth-child(2){text-align:left}.bt{margin-top:14px;font-size:15px}.bt div{display:flex;justify-content:space-between;padding:3px 0}.bt .g{font-size:18px;font-weight:700;border-top:2px solid #000;margin-top:6px;padding-top:8px}.sg{margin-top:70px;text-align:right}.sg span{display:inline-block;border-top:1px solid #000;padding:6px 8px 0;min-width:200px;text-align:center}.bs{text-align:center;font-weight:700;font-size:16px;margin:0 0 4px}.bl+.bl{margin-top:40px;padding-top:30px;border-top:2px dashed #999}@media print{.bl+.bl{page-break-before:always;margin:0;padding:0;border:0}}';
+$('head').insertAdjacentHTML('beforeend','<style>'+BILLCSS+'</style>');
+
+/* ---------- start values (from your notes) ---------- */
+function defaults(){
+ const buf=[],cow=[];
+ for(let i=50;i<=70;i++) buf.push({fat:i/10,rate:+(62+(i-60)*0.5).toFixed(2)});
+ for(let i=28;i<=45;i++){ let r= i<=34?43.2-(34-i)*0.3 : i==35?43.5 : i==36?43.7 : 43.7+(i-36)*0.2;
+  cow.push({fat:i/10,rate:+r.toFixed(2)}); }
+ return {buffalo:{label:'Buffalo',ideal:9,fat:buf,snf:[{snf:9,adj:0}]},
+         cow:{label:'Cow',ideal:8.5,fat:cow,snf:[{snf:8.5,adj:0}]}};
+}
+let S=load();
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.types)return x}catch(e){}
+ return {title:'Milk Bill',sign:'Signature',types:defaults(),entries:[]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ---------- calculation ---------- */
+function calc(t,qty,fat,snf){
+ const T=S.types[t]; const row=T.fat.find(r=>Math.abs(r.fat-fat)<1e-6);
+ if(!row) return null;
+ let adj=0; if(T.snf.length){const s=snf||T.ideal; let b=T.snf[0];
+  T.snf.forEach(r=>{if(Math.abs(r.snf-s)<Math.abs(b.snf-s)) b=r}); adj=b.adj}
+ const rate=row.rate+adj; return {rate,amount:+(rate*qty).toFixed(2)};
+}
+const money=n=>'₹'+(+n).toFixed(2);
+const fmt=d=>d.split('-').reverse().join('-');
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const esc=s=>String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- tabs ---------- */
+function tab(n){['daily','weekly','rates'].forEach(k=>{$('#'+k).classList.toggle('hide',k!=n);$('#t_'+k).classList.toggle('on',k==n)});
+ if(n=='weekly')weekShow(); if(n=='rates')drawRates(); names()}
+function names(){const set=[...new Set(S.entries.map(e=>e.name))];$('#names').innerHTML=set.map(n=>' <option value="'+esc(n)+'">').join('')}
+
+/* ---------- daily ---------- */
+$('#d_cards').innerHTML=TYPES.map(t=>`<div class="card ${t=='cow'?'cow':'buf'}"><h2>${S.types[t].label}</h2>
+ <div class="row"><div><label>Qty (Ltr)</label><input id="q_${t}" type="number" step="0.01" inputmode="decimal" oninput="dayCalc()"></div>
+ <div><label>Fat</label><input id="f_${t}" type="number" step="0.1" inputmode="decimal" oninput="dayCalc()"></div>
+ <div><label>SNF</label><input id="s_${t}" type="number" step="0.1" inputmode="decimal" placeholder="${S.types[t].ideal}" oninput="dayCalc()"></div></div>
+ <div class="res"><span class="r">Rate <b id="r_${t}_v">₹0.00</b></span><span class="a">Amount <b id="a_${t}_v">₹0.00</b></span></div>
+ <div class="warn" id="w_${t}"></div></div>`).join('');
+$('#d_date').value=iso(new Date());
+
+function readType(t){return {qty:+$('#q_'+t).value||0,fat:$('#f_'+t).value===''?null:+$('#f_'+t).value,snf:+$('#s_'+t).value||0}}
+function dayCalc(){let total=0;
+ TYPES.forEach(t=>{const v=readType(t);let rate=0,amt=0,w='';
+  if(v.qty>0){ if(v.fat==null) w='Enter fat'; else {const c=calc(t,v.qty,v.fat,v.snf);
+    if(!c) w='Fat '+v.fat+' is not in the rate table. Add it in Rate tables.'; else {rate=c.rate;amt=c.amount}}}
+  $('#r_'+t+'_v').textContent=money(rate);$('#a_'+t+'_v').textContent=money(amt);$('#w_'+t).textContent=w;total+=amt});
+ $('#d_total').textContent=money(total);return total}
+function dayRows(){const date=$('#d_date').value,rows=[];
+ TYPES.forEach(t=>{const v=readType(t);if(v.qty>0&&v.fat!=null){const c=calc(t,v.qty,v.fat,v.snf);
+  if(c)rows.push({date,type:t,qty:v.qty,fat:v.fat,snf:v.snf||S.types[t].ideal,rate:c.rate,amount:c.amount})}});return rows}
+function key(n,d){return n.trim().toLowerCase()+'|'+d}
+function saveDay(){const name=$('#d_name').value.trim(),date=$('#d_date').value;
+ if(!name||!date){$('#d_msg').textContent='Enter name and date first.';return}
+ const rows=dayRows();if(!rows.length){$('#d_msg').textContent='Enter quantity and fat to save.';return}
+ S.entries=S.entries.filter(e=>key(e.name,e.date)!=key(name,date));
+ const u=Date.now();S.entries.push({name,date,rows,u});save();names();cloudEntry(name,date,rows,u);$('#d_msg').style.color='var(--ok)';$('#d_msg').textContent='Saved for '+name+' on '+fmt(date)+'.'}
+function loadDay(){$('#d_msg').textContent='';const e=S.entries.find(e=>key(e.name,e.date)==key($('#d_name').value,$('#d_date').value));
+ TYPES.forEach(t=>{const r=e&&e.rows.find(x=>x.type==t);$('#q_'+t).value=r?r.qty:'';$('#f_'+t).value=r?r.fat:'';$('#s_'+t).value=r&&r.snf!=S.types[t].ideal?r.snf:''});
+ if(e){$('#d_msg').style.color='var(--mut)';$('#d_msg').textContent='Loaded saved entry.'}dayCalc()}
+function clearDay(){TYPES.forEach(t=>['q_','f_','s_'].forEach(p=>$('#'+p+t).value=''));$('#d_msg').textContent='';dayCalc()}
+function dayBill(){const name=$('#d_name').value.trim(),rows=dayRows();
+ if(!name){$('#d_msg').style.color='#b42318';$('#d_msg').textContent='Enter name first.';return}
+ if(!rows.length){$('#d_msg').style.color='#b42318';$('#d_msg').textContent='Nothing to bill yet.';return}
+ openBill({name,label:'Date: '+fmt($('#d_date').value),rows})}
+
+/* ---------- weekly ---------- */
+function quick(k){const t=new Date(),f=new Date();
+ if(k=='week'){f.setDate(t.getDate()-((t.getDay()+6)%7))} else if(k=='month'){f.setDate(1)} else f.setDate(t.getDate()-(k-1));
+ $('#w_from').value=iso(f);$('#w_to').value=iso(t);weekShow()}
+let WD=[];
+function dates(a,b){const out=[];let d=new Date(a+'T00:00:00');const e=new Date(b+'T00:00:00');
+ while(d<=e&&out.length<62){out.push(iso(d));d.setDate(d.getDate()+1)}return out}
+function wRead(date,t){const g=p=>$('#w'+p+'_'+date+'_'+t);const f=g('f').value;return {qty:+g('q').value||0,fat:f===''?null:+f,snf:+g('s').value||0}}
+function wRows(date){const rows=[];TYPES.forEach(t=>{const v=wRead(date,t);
+ if(v.qty>0&&v.fat!=null){const c=calc(t,v.qty,v.fat,v.snf);if(c)rows.push({date,type:t,qty:v.qty,fat:v.fat,snf:v.snf||S.types[t].ideal,rate:c.rate,amount:c.amount})}});return rows}
+function wDay(date){let tot=0,warn='';
+ TYPES.forEach(t=>{const v=wRead(date,t);let amt=0;
+  if(v.qty>0){if(v.fat==null)warn='Enter fat for '+S.types[t].label;else{const c=calc(t,v.qty,v.fat,v.snf);
+   if(!c)warn='Fat '+v.fat+' is not in the '+S.types[t].label+' rate table';else amt=c.amount}}
+  $('#wa_'+date+'_'+t).textContent=money(amt);tot+=amt});
+ $('#wt_'+date).textContent=money(tot);$('#ww_'+date).textContent=warn}
+function wTotals(){const rows=WD.flatMap(wRows);$('#w_tot').innerHTML=rows.length?'<h2 style="margin:0 0 6px;font-size:1.05rem">Period total</h2>'+totalsHTML(rows):'<p class="note" style="margin:0">Totals appear here once you add entries.</p>'}
+function wCalc(date){wDay(date);wTotals()}
+function wSave(date){const name=$('#w_name').value.trim(),m=$('#w_msg');
+ if(!name){m.style.color='#b42318';m.textContent='Enter name to save entries.';return}
+ const rows=wRows(date),ex=S.entries.find(e=>key(e.name,e.date)==key(name,date));
+ if(JSON.stringify(ex?ex.rows:[])===JSON.stringify(rows))return;
+ const u=Date.now();S.entries=S.entries.filter(e=>key(e.name,e.date)!=key(name,date));
+ if(rows.length)S.entries.push({name,date,rows,u});save();names();cloudEntry(name,date,rows,u);
+ m.style.color='var(--ok)';m.textContent='Saved '+fmt(date)}
+function weekShow(){const n=$('#w_name').value.trim(),a=$('#w_from').value,b=$('#w_to').value,o=$('#w_out'),m=$('#w_msg');m.textContent='';
+ if(!n||!a||!b||a>b){WD=[];$('#w_tot').innerHTML='';o.innerHTML='<div class="card"><p class="note" style="margin:0">Enter a name and choose From and To dates. Every date will appear here to fill in.</p></div>';return}
+ WD=dates(a,b);
+ o.innerHTML=WD.map(d=>{const e=S.entries.find(x=>key(x.name,x.date)==key(n,d));
+  const dn=new Date(d+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short'});
+  return `<div class="card day"><div class="dh"><b>${dn} ${fmt(d)}</b><span id="wt_${d}">₹0.00</span></div>`+
+  TYPES.map(t=>{const r=e&&e.rows.find(x=>x.type==t);const T=S.types[t];
+   return `<div class="wl ${t}"><span class="tn">${T.label}</span>
+   <input id="wq_${d}_${t}" type="number" step="0.01" inputmode="decimal" placeholder="Qty" value="${r?r.qty:''}" oninput="wCalc('${d}')" onchange="wSave('${d}')">
+   <input id="wf_${d}_${t}" type="number" step="0.1" inputmode="decimal" placeholder="Fat" value="${r?r.fat:''}" oninput="wCalc('${d}')" onchange="wSave('${d}')">
+   <input id="ws_${d}_${t}" type="number" step="0.1" inputmode="decimal" placeholder="SNF ${T.ideal}" value="${r&&r.snf!=T.ideal?r.snf:''}" oninput="wCalc('${d}')" onchange="wSave('${d}')">
+   <b id="wa_${d}_${t}">₹0.00</b></div>`}).join('')+`<div class="warn" id="ww_${d}"></div></div>`}).join('');
+ WD.forEach(wDay);wTotals()}
+function weekBill(){const m=$('#w_msg');
+ if(!$('#w_name').value.trim()||!WD.length){m.style.color='#b42318';m.textContent='Enter name and dates first.';return}
+ WD.forEach(wSave);const r=WD.flatMap(wRows);
+ if(!r.length){m.style.color='#b42318';m.textContent='No entries to bill yet. Fill in quantity and fat.';return}
+ m.textContent='';openBill({name:$('#w_name').value.trim(),label:'Period: '+fmt($('#w_from').value)+' to '+fmt($('#w_to').value),rows:r,split:true})}
+
+/* ---------- bill ---------- */
+function tableHTML(rows,cls){return '<table class="'+cls+'"><tr><th>Date</th><th>Milk</th><th>Qty</th><th>Fat</th><th>SNF</th><th>Rate</th><th>Amount</th></tr>'+ 
+ rows.map(r=>`<tr><td>${fmt(r.date)}</td><td>${S.types[r.type].label}</td><td>${r.qty}</td><td>${r.fat}</td><td>${r.snf}</td><td>${(+r.rate).toFixed(2)}</td><td>${(+r.amount).toFixed(2)}</td></tr>`).join('')+'</table>'}
+function totalsHTML(rows,cls){let g=0,h='';
+ TYPES.forEach(t=>{const x=rows.filter(r=>r.type==t);if(x.length){const q=x.reduce((s,r)=>s+r.qty,0),a=x.reduce((s,r)=>s+r.amount,0);g+=a;
+  h+=`<div><span>${S.types[t].label}: ${+q.toFixed(2)} Ltr</span><span>${money(a)}</span></div>`}});
+ return '<div class="bt">'+h+'<div class="g"><span>Total amount</span><span>'+money(g)+'</span></div></div>'}
+let CUR=null;
+function openBill(b){CUR=b;$('#b_title').value=S.title;drawBill();$('#ov').classList.remove('hide');$('#ov').scrollTop=0}
+function oneBill(rows,sub){return `<div class="bl"><h1 class="bh" style="color:#000;padding:0">${esc(S.title)}</h1>${sub?'<div class="bs">'+esc(sub)+'</div>':''}
+ <div class="bm"><span><b>Name:</b> ${esc(CUR.name)}</span><span><b>${esc(CUR.label.split(': ')[0])}:</b> ${esc(CUR.label.split(': ')[1])}</span></div>
+ ${tableHTML(rows,'b')}${totalsHTML(rows)}<div class="sg"><span>${esc(S.sign)}</span></div></div>`}
+function billInner(){if(!CUR.split)return oneBill(CUR.rows,'');
+ return TYPES.filter(t=>CUR.rows.some(r=>r.type==t)).map(t=>oneBill(CUR.rows.filter(r=>r.type==t),S.types[t].label+' milk')).join('')}
+function drawBill(){if(CUR)$('#sheet').innerHTML=billInner()}
+function dlBill(){const html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>'+esc(S.title)+'</title><style>body{font-family:Arial,sans-serif;padding:24px;max-width:760px;margin:auto}'+BILLCSS+'</style></head><body>'+billInner()+'</body></html>';
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html'}));
+ a.download=(CUR.name+'-'+CUR.label.replace(/[^0-9a-z]+/gi,'_')).replace(/\s+/g,'_')+'.html';a.click()}
+
+/* ---------- rate tables (easy to edit) ---------- */
+let RT='buffalo';
+function rtype(t){RT=t;TYPES.forEach(k=>$('#r_'+k).classList.toggle('on',k==t));drawRates()}
+function drawRates(){const T=S.types[RT];$('#s_title').value=S.title;$('#s_sign').value=S.sign;
+ $('#fatRows').innerHTML=T.fat.map((r,i)=>`<div class="rw"><input type="number" step="0.1" value="${r.fat}" onchange="setRow('fat',${i},'fat',this.value)"><input type="number" step="0.01" value="${r.rate}" onchange="setRow('fat',${i},'rate',this.value)"><button aria-label="Remove" onclick="delRow('fat',${i})">✕</button></div>`).join('');
+ $('#snfRows').innerHTML=T.snf.map((r,i)=>`<div class="rw"><input type="number" step="0.1" value="${r.snf}" onchange="setRow('snf',${i},'snf',this.value)"><input type="number" step="0.01" value="${r.adj}" onchange="setRow('snf',${i},'adj',this.value)"><button aria-label="Remove" onclick="delRow('snf',${i})">✕</button></div>`).join('')}
+function setRow(l,i,f,v){const T=S.types[RT],r=T[l][i],old=r[f],nv=+v;if(nv===old||v==='')return drawRates();
+ const what=f==l?'value':(f=='adj'?'adjustment':'rate');
+ if(!confirm('Change '+T.label+' '+(l=='fat'?'Fat':'SNF')+' '+r[l]+' '+what+' from '+old+' to '+nv+'?'))return drawRates();
+ r[f]=nv;if(f=='fat'||f=='snf')T[l].sort((x,y)=>x[f]-y[f]);touch();drawRates()}
+function delRow(l,i){const T=S.types[RT],r=T[l][i];
+ if(!confirm('Remove '+T.label+' '+(l=='fat'?'Fat':'SNF')+' '+r[l]+' row?'))return;T[l].splice(i,1);touch();drawRates()}
+function addFat(){const a=S.types[RT].fat,l=a[a.length-1]||{fat:0,rate:0};a.push({fat:+(l.fat+0.1).toFixed(1),rate:l.rate});touch();drawRates()}
+function addSnf(){const a=S.types[RT].snf,l=a[a.length-1]||{snf:S.types[RT].ideal};a.push({snf:+(l.snf+0.1).toFixed(1),adj:0});touch();drawRates()}
+function resetAll(){if(confirm('Reset both rate tables to the start values? Saved entries are not deleted.')){S.types=defaults();touch();drawRates()}}
+
+/* ---------- cloud (Firebase, no sign-in) ---------- */
+const CKEY='milkApp.cloud',FBV='10.12.2';
+let DB=null,CODE='',CT=null;
+function cstat(m,bad){const e=$('#c_stat');if(e){e.textContent=m;e.style.color=bad?'#b42318':'var(--mut)'}}
+const CLOUD={config:{apiKey:"AIzaSyCOGimkD_g6GPxX1AYsS5ueT-_PqfxJppQ",authDomain:"dairytodairy.firebaseapp.com",projectId:"dairytodairy",storageBucket:"dairytodairy.firebasestorage.app",messagingSenderId:"601196708948",appId:"1:601196708948:web:f92295a49d8dba8709d9c1"},
+ code:"9sm58uf39v7y7pb4"};
+function cloudCfg(){return CLOUD}
+const eid=(n,d)=>encodeURIComponent(n.trim().toLowerCase())+'_'+d;
+function ld(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('Could not load Firebase. Check internet'));document.head.appendChild(s)})}
+async function cloudInit(){const c=cloudCfg();if(!c)return false;
+ if(!window.firebase){const u='https://www.gstatic.com/firebasejs/'+FBV+'/firebase-';await ld(u+'app-compat.js');await ld(u+'firestore-compat.js')}
+ if(!firebase.apps.length)firebase.initializeApp(c.config);
+ DB=firebase.firestore();CODE=c.code;return true}
+const base=()=>DB.collection('dairies').doc(CODE);
+const cerr=e=>cstat('Cloud error: '+e.message,1);
+function cloudEntry(name,date,rows,u){if(!DB)return;
+ base().collection('entries').doc(eid(name,date)).set({name,date,rows,u,deleted:!rows.length})
+ .then(()=>cstat('Cloud synced '+new Date().toLocaleTimeString())).catch(cerr)}
+function putSettings(){return base().collection('meta').doc('settings').set({title:S.title,sign:S.sign,types:JSON.stringify(S.types),u:S.su})}
+function cloudDirty(){if(!DB)return;clearTimeout(CT);CT=setTimeout(()=>putSettings().catch(cerr),1500)}
+function touch(){S.su=Date.now();save();cloudDirty()}
+function refreshUI(){TYPES.forEach(t=>$('#s_'+t).placeholder=S.types[t].ideal);$('#s_title').value=S.title;$('#s_sign').value=S.sign;names();loadDay();
+ if(!$('#weekly').classList.contains('hide'))weekShow();if(!$('#rates').classList.contains('hide'))drawRates()}
+async function cloudSync(){
+ if(!DB&&!(await cloudInit())){cstat('Not connected. Data is only on this device.');return}
+ cstat('Syncing…');
+ const col=base().collection('entries'),snap=await col.get(),cl={},lo={};
+ snap.forEach(d=>cl[d.id]=d.data());S.entries.forEach(e=>lo[eid(e.name,e.date)]=e);
+ Object.keys(cl).forEach(id=>{const c=cl[id],l=lo[id];
+  if(!l||(c.u||0)>(l.u||0)){if(c.deleted)delete lo[id];else lo[id]={name:c.name,date:c.date,rows:c.rows,u:c.u}}});
+ const up=Object.keys(lo).filter(id=>!cl[id]||(lo[id].u||0)>(cl[id].u||0));
+ for(let i=0;i<up.length;i+=400){const b=DB.batch();
+  up.slice(i,i+400).forEach(id=>{const e=lo[id];e.u=e.u||Date.now();b.set(col.doc(id),{name:e.name,date:e.date,rows:e.rows,u:e.u,deleted:false})});await b.commit()}
+ S.entries=Object.values(lo);
+ const ms=await base().collection('meta').doc('settings').get(),cu=ms.exists?(ms.data().u||0):-1;
+ if(cu>(S.su||0)){const m=ms.data();S.title=m.title;S.sign=m.sign;S.types=JSON.parse(m.types);S.su=m.u}
+ else if(cu<(S.su||0)||!ms.exists){S.su=S.su||Date.now();await putSettings()}
+ save();refreshUI();cstat('Cloud synced '+new Date().toLocaleTimeString()+' ('+S.entries.length+' entries). Tap to sync again')}
+async function cloudNow(){try{await cloudSync()}catch(e){cerr(e)}}
+cstat('Connecting…');cloudSync().catch(e=>cstat('Cloud offline or error: '+e.message+' (tap to retry)',1));
+
+dayCalc();names();
+</script>
+</body>
+</html>
